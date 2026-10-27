@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+body { @apply bg-lav text-ink font-sans; margin: 0; }
+.card { @apply bg-white rounded-2xl shadow-sm p-4; }
+.btn { @apply w-full rounded-2xl bg-indigo text-white font-semibold py-4 active:scale-[.98] transition; }
+.chip { @apply rounded-xl border-2 border-transparent bg-white px-3 py-3 text-sm font-semibold text-muted; }
+.chip.on { @apply border-indigo text-indigo bg-lav; }

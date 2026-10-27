@@ -1,0 +1,116 @@
+﻿ChargeShare â€“ PS-5 Hackathon Build Documentation
+Oct 27, 2026 Â· @Vedant
+1. Problem and vision
+ChargeShare turns idle private EV chargers into an emergency rescue network, so a driver with 5% battery can find, book and reach a nearby owner's charger in minutes instead of waiting for a tow.
+Problem (PS-5): EV drivers get stranded when the battery is low and public chargers are out of reach, occupied or broken. Meanwhile many EV owners have compatible private chargers (home, society parking, office) that sit unused most of the day and that they would share, but there is no convenient, trusted way to connect the two sides.
+Vision: "Never stranded. Every charger counts." A PWA that works from a single SOS tap, with no app-store install.
+Users
+Stranded driver (requester): low battery, stressed, needs a fast answer. Cares about reachability, connector match, price, safety.
+Charger host: EV owner or society resident with an idle charger. Cares about earning, privacy, control over when and who.
+Secondary users (stretch story): cab and delivery fleet drivers on e-2W/e-3W/e-4W who lose earning time when they cannot charge.
+Working name options: ChargeShare (given in the problem statement), ChargeBuddy, VoltRescue. Keep ChargeShare for the demo.
+2. Competitor analysis
+No mainstream app combines emergency-first matching, private chargers and a trust layer; most players only list fixed public stations. This table is from memory (approximate), so verify and update it with Perplexity prompt R1 in section 9 before presenting.
+Gaps we fill
+Private chargers are invisible to existing apps, so supply is untapped.
+Nobody ranks options by whether the driver can actually reach them with the battery left.
+No one offers a trust loop (verified hosts, ratings, price caps, safe handover) for strangers sharing power.
+Zero new hardware: supply grows as fast as owners sign up.
+3. Features
+Build the 10 MVP features first (about 4 hours); everything in the stretch table only starts once the demo flow works end to end.
+MVP (must ship)
+Stretch (only after MVP works)
+4. Workflow
+
+rescue flow Â· 7 steps, 1 decision, 1 loop
+The driver flow runs left to right across the top, drops to the host for the accept decision, and a decline loops back to request the next host.
+Host flow: sign up as Host, add a charger (connector, kW, price with AI suggestion, hours, map pin, rules), toggle Available, receive a request with the driver's battery and ETA, Accept or Decline within 2 minutes, confirm arrival (QR or button), start and stop the session, receive payout and a review.
+Edge cases to handle in the UI
+No reachable host: show the nearest public charger and a "call roadside help" button instead of an empty screen.
+Host does not answer in 2 minutes: auto-expire the request and suggest the next ranked host.
+Driver cancels: free before acceptance, small fee after the host is on the way.
+Wrong connector: block the Request button with the reason shown on the card.
+Screen list
+5. USP
+Positioning line: "Other apps help you find a charger. ChargeShare rescues you when you are about to run out."
+Emergency-first design. The home screen is one big SOS button, not a search bar. Input is battery % and connector, nothing else.
+Range-aware matching. Only hosts the driver can actually reach with the battery left are shown as "Reachable"; the rest are greyed out. Competitors list stations without checking this.
+Untapped supply, zero infrastructure. Uses chargers that already exist and sit idle, so the network grows without capital cost.
+Trust layer for strangers. Verified hosts, ratings, price caps, house rules, QR check-in and an SOS share link.
+Win-win economics. Driver pays a fair per-kWh price with a capped rescue fee; host earns from an asset that earned nothing before.
+PWA reach. Opens from a WhatsApp link, installs to the home screen, no app-store step during an emergency.
+Impact angle for judges: fewer tow-truck calls, less range anxiety (the main barrier to EV adoption), and better use of existing power.
+6. AI features
+Five AI features, each built so the app still works if the AI call fails (deterministic fallback), because demo Wi-Fi is unreliable. Runtime prompts for each are in section 10.
+Why this is credible: A2 is deterministic and explainable (judges can see the formula), while A1, A3, A4 and A5 use the LLM only where language understanding adds value.
+Stretch AI: demand prediction for hosts ("Evenings near the station are busy; open your charger 6 to 9 pm"), and a multilingual voice SOS in Hindi and Marathi.
+Integration rule: never put the API key in the client. Call the LLM from a Supabase Edge Function or a Vercel serverless function. Gemini Flash or Groq free tiers are enough.
+7. PWA tech stack, architecture and data model
+Use React + Vite + Tailwind with Supabase, because it gives auth, database, realtime and storage with almost no backend code, and it fits the Lovable or Bolt workflow you used before.
+Architecture in one line: PWA client talks to Supabase (auth, rows, realtime subscriptions) and to one Edge Function (/ai) that calls the LLM; the Rescue Score runs in the client from host rows.
+Data model
+requests.status values: requested, accepted, on_the_way, charging, completed, declined, cancelled.
+Seed data: insert 15 to 20 fake hosts around your demo city so the map is never empty on stage (use Perplexity prompt R4 and R8 for realistic values).
+8. Six-hour build plan
+Times are relative to kickoff (T+0). Split the team into A (frontend and PWA), B (Supabase and AI function) and C (research, seed data, pitch). Adjust to your team of three.
+Cut line if you fall behind: drop in this order: push notifications, QR check-in, earnings dashboard, A4 and A5, multilingual. Never cut the SOS to request to status loop or A2.
+Rules that save hours
+Seed hosts and a demo driver account so the flow works without sign-up friction.
+Test on a real phone over HTTPS early; geolocation and install prompts fail on plain HTTP.
+Keep a two-tab demo (driver on phone, host on laptop) to show realtime accept.
+Record a backup video at T+4:15 in case Wi-Fi fails.
+9. Perplexity research prompts
+Paste each prompt as is. Run R1, R4 and R5 first because they feed the build. Ask for tables and links so you can verify and cite in the pitch.
+R1. Competitors
+Act as a market analyst. Research EV charging apps and networks in India as of 2026: Statiq, Tata Power EZ Charge, ChargeZone, Ather Grid, Jio-bp pulse, Zeon, EVRE, Kazam, plus PlugShare and any app that lets people share private or home EV chargers (India or abroad, e.g. peer-to-peer charger sharing). For each give: business model, number of chargers, key features, pricing, user complaints from Play Store and Reddit (r/indianevs), and whether it supports private chargers, booking, emergency or low-battery mode. Output a comparison table, then a list of 5 unmet needs. Cite sources with links.
+R2. Problem evidence for the pitch
+Give current statistics for India (2025-2026) on: EV registrations by segment (2W, 3W, 4W), public charger count vs EV count, share of charging done at home, reports of drivers stranded by low battery or out-of-order chargers, and range anxiety as a barrier to adoption. Use government (MoP, BEE, Vahan) and reputable industry sources. Return 8 citable facts with source links and year.
+R3. Legal and regulatory
+Can a private individual in India legally let others charge an EV at their home or society charger for a fee? Cover the Electricity Act 2003 on resale of electricity, the Ministry of Power EV charging guidelines (2022 and later amendments), whether private charging needs a licence, society (RWA) permission issues, and tariff rules. Summarise in plain language with a risk level and how a startup can stay compliant (for example, charging a service fee instead of reselling power). Cite official sources.
+R4. Vehicle data for range logic and seed data
+Create a table of the 15 best-selling EVs in India in 2026 (2W, 3W and 4W): model, usable battery capacity in kWh, real-world efficiency in km per kWh, connector type (CCS2, Type 2, Bharat AC001, LEV connector, etc.), max AC charging kW. Output also as JSON with keys model, battery_kwh, km_per_kwh, connector, ac_kw. Cite sources.
+R5. Pricing
+For Mumbai in 2026, give: residential EV charging tariff per kWh (BEST, Adani, Tata Power, MSEDCL), typical public AC and DC charger price per kWh, and typical parking or service fees. Recommend a fair price range per kWh for a peer-to-peer emergency charge and a sensible maximum cap. Show your calculation and cite sources.
+R6. Trust and safety design
+How do peer-to-peer marketplaces (Airbnb, BlaBlaCar, Turo, Park+ and ParkingSpot-style apps, home EV charger sharing apps) build trust between strangers? List the verification steps, rating systems, insurance or guarantee policies, dispute handling, and safety features. Recommend a lightweight trust model for a 6-hour hackathon MVP and a fuller model for production.
+R7. UX pain points
+Summarise the top 15 recurring complaints in reviews of PlugShare, Statiq and Tata Power EZ Charge (Play Store, App Store, Reddit, X) in 2025-2026. Group them by theme (broken chargers, payment failures, wrong availability, app bugs, queues) and propose a feature for each that a peer-to-peer rescue app could offer.
+R8. Demo seed locations
+List 20 realistic residential or commercial locations in [YOUR DEMO AREA, e.g. Andheri, Powai, Thane, Navi Mumbai] where EV owners are likely to have private chargers (housing societies with EV charging, offices, malls). Give name, area, latitude, longitude, and a plausible connector type. Output as JSON with keys name, lat, lng, connector. Mark them as illustrative.
+R9. Pitch story
+Find 3 real news stories or Reddit threads from India about EV owners stranded due to low battery or lack of chargers, plus any government target for EV charging infrastructure by 2030. Give short summaries with links I can quote in a 3-minute pitch.
+R10. Judge questions
+I am pitching a peer-to-peer EV charger sharing PWA for emergency charging in India at a hackathon. List the 15 toughest questions a technical and business judge would ask (safety, legality, payments, cold start, scalability, revenue) and give a strong 2-sentence answer to each.
+10. Builder prompts and runtime AI prompts
+Paste the master prompt into Lovable, Bolt or Cursor first, then send the follow-up prompts one at a time. Runtime prompts go inside your Edge Function.
+Master build prompt
+Build "ChargeShare", a mobile-first installable PWA: a peer-to-peer EV emergency charging network. A stranded EV driver taps SOS and finds nearby private chargers shared by other EV owners.Tech: React + Vite + Tailwind, vite-plugin-pwa (manifest, service worker, offline fallback), Leaflet + OpenStreetMap, Supabase (auth, Postgres, realtime). No paid map keys.Roles: Driver and Host (chosen at onboarding, switchable).Screens:1. Splash and onboarding: role pick, name, phone, vehicle (model, connector type, battery kWh, km per kWh).2. Driver Home: huge red SOS button, battery % slider, connector selector, "use my location", and a text box "Describe your emergency" (AI parse).3. Rescue Results: Leaflet map with host pins and a radius circle, plus ranked cards. Each card: host name, distance, ETA, kW, price per kWh, rating, Verified badge, "Reachable" or "Too far" badge computed from battery, and a Request button.4. Request Detail: cost estimate (kWh needed, time, rupees), house rules, Request button, mock UPI payment sheet.5. Live Status: stepper Requested, Accepted, On the way, Charging, Completed with realtime updates, Navigate (opens Google Maps deep link), call and chat, share SOS link.6. Host Dashboard: list of my chargers, toggle availability, incoming requests with Accept and Decline, earnings summary.7. Add Charger: connector, kW, price per kWh (with AI fair price suggestion), availability window, map pin, rules, photo.8. Review screen after completion: 5 stars plus comment.Rescue Score (client side): remainingKm = batteryPct/100 * batteryKwh * kmPerKwh * 0.8; reachable if haversineKm * 1.3 <= remainingKm. Score = 0.35*reachabilityDistance + 0.20*connectorPowerMatch + 0.20*rating + 0.15*priceScore + 0.10*responseSpeed. Sort descending; Reachable first.Seed 18 hosts with realistic names, coordinates around [CITY AREA], mixed connectors (CCS2, Type 2, Bharat AC001), prices 8 to 20 rupees per kWh, ratings 3.8 to 5.0.Design: dark navy and electric green theme, large touch targets, high contrast, clear "stress mode" with minimal UI during SOS. Include an install-app banner. All data must work offline-tolerant with graceful errors.AI: call a single endpoint /ai with {task, payload}. Tasks: parse_sos, explain_charge, screen_listing, suggest_price. Every task must have a deterministic fallback if the call fails.
+Follow-up prompts (send in order)
+1. Create the Supabase schema for profiles, vehicles, chargers, requests, reviews, messages with basic RLS, and a seed script for 18 hosts.2. Implement the Rescue Score and Reachable badge exactly as specified and show the formula in an "How we rank" bottom sheet.3. Implement realtime request, accept and status updates between a driver tab and a host tab.4. Add the /ai Edge Function with the four tasks and wire parse_sos into the Driver Home text box with a microphone button using the Web Speech API.5. Finish PWA: manifest with icons, service worker caching app shell, offline page, install prompt. Verify Lighthouse PWA checks.6. Polish: loading states, empty states, error toasts, accessibility, stress mode.
+Runtime prompt A1: parse SOS (system)
+You extract structured data from an EV driver's emergency message. Return ONLY valid JSON, no prose.Schema: {"vehicle_model": string|null, "battery_pct": number|null, "location_text": string|null, "connector": "CCS2"|"Type2"|"Bharat AC001"|"LEV"|null, "urgency": "critical"|"high"|"normal"}Rules: battery_pct is 0-100; infer urgency critical if battery <= 8 or the user says stuck, stranded, dead; never invent values, use null when unknown; the message may be English, Hindi or Marathi (Roman or native script).
+Runtime prompt A3: explain charge (system)
+You are a calm EV rescue assistant. Given JSON with battery_pct, kwh_needed, charger_kw, price_per_kwh, minutes_needed, km_gained, distance_to_host_km, write ONE reassuring sentence (max 30 words) telling the driver how long to charge and what that achieves, plus one short tip if distance to host is more than 70% of remaining range (suggest eco driving: no AC, keep under 40 km/h). Use only the numbers given.
+Runtime prompt A4: screen listing or message (system)
+You are a trust and safety reviewer for a peer-to-peer EV charging marketplace. Review the text and return ONLY JSON: {"risk": "low"|"medium"|"high", "reasons": string[], "action": "allow"|"review"|"block"}. Flag: requests to pay outside the app, sharing OTP or card details, unsafe or isolated meeting places, unrealistic prices, abusive language, identity or contact harvesting. Be conservative but do not block normal messages.
+Runtime prompt A5: suggest price (system)
+You suggest a fair price per kWh in Indian rupees for a private EV charger host. Input JSON: home_tariff_per_kwh, charger_kw, hour_of_day, urgency, nearest_public_price. Return ONLY JSON: {"suggested": number, "min": number, "max_cap": number, "reason": string}. Rules: suggested between 1.3x and 2.0x home tariff; max_cap is at most 2.5x home tariff and never above the nearest public price plus 30 percent; reason is under 20 words.
+11. Demo script, pitch and risks
+Three-minute demo script
+Hook (20 s): "It is 9 pm, your EV shows 6%, the nearest public charger is dead. What now?"
+SOS (30 s): On the phone, speak: "Nexon EV, 6 percent, near the station, need CCS2." The form fills itself (A1).
+Results (40 s): Map shows hosts; two are greyed "Too far", three are "Reachable". Open "How we rank" to show the formula (A2).
+Request (30 s): Tap Request; on the laptop, the host sees it and taps Accept; the phone updates live.
+Charge and pay (30 s): Show the AI sentence (A3), the cost, mock UPI pay, then the review.
+Host side and close (30 s): Earnings dashboard and the fair-price assistant (A5). Close: "Zero new hardware. Every idle charger becomes a rescue point."
+Pitch structure: problem with one real story (R9), solution, live demo, how it works (range-aware matching, trust layer), market and revenue, roadmap.
+Revenue model: a 10 to 15 percent service fee per session, host subscription for featured listing, and B2B plans for fleets and housing societies.
+Risks and answers
+Final checklist before submission
+â˜ Deployed over HTTPS and installable on a real Android phone
+â˜ SOS to request to accept to completed works twice in a row
+â˜ 15 or more seeded hosts visible on the map
+â˜ All 5 AI features have working fallbacks
+â˜ Backup demo video recorded
+â˜ Pitch rehearsed with timer
+â˜ README with problem, features, stack and run steps
